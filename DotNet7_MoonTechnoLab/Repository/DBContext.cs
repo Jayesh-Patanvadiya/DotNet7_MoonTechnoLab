@@ -31,9 +31,11 @@ namespace DotNet7_MoonTechnoLab.Repository
         public DbSet<OTReg> OTReg { get; set; }
 
         public DbSet<TimeAttendance> TimeAttendance { get; set; }
+		public DbSet<OverTimeCal> OverTimeCal { get; set; }
 
-    }
-    public class MyWebApiContextFactory : IDesignTimeDbContextFactory<DBContext>
+
+	}
+	public class MyWebApiContextFactory : IDesignTimeDbContextFactory<DBContext>
     {
 		protected readonly IConfiguration _configuration;
 

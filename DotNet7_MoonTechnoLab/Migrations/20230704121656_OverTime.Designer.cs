@@ -2,6 +2,7 @@
 using DotNet7_MoonTechnoLab.Repository;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Infrastructure;
+using Microsoft.EntityFrameworkCore.Migrations;
 using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 using Npgsql.EntityFrameworkCore.PostgreSQL.Metadata;
 
@@ -10,9 +11,11 @@ using Npgsql.EntityFrameworkCore.PostgreSQL.Metadata;
 namespace DotNet7_MoonTechnoLab.Migrations
 {
     [DbContext(typeof(DBContext))]
-    partial class MyWebApiContextModelSnapshot : ModelSnapshot
+    [Migration("20230704121656_OverTime")]
+    partial class OverTime
     {
-        protected override void BuildModel(ModelBuilder modelBuilder)
+        /// <inheritdoc />
+        protected override void BuildTargetModel(ModelBuilder modelBuilder)
         {
 #pragma warning disable 612, 618
             modelBuilder
