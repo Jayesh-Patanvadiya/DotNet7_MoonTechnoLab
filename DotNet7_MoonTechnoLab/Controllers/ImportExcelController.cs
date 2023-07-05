@@ -25,7 +25,7 @@ namespace DotNet7_MoonTechnoLab.Controllers
 		}
 
 		[HttpPost("PostPayReg")]
-		public async Task<string> PostPayReg(IFormFile excelFile)
+		public async Task<IActionResult> PostPayReg(IFormFile excelFile)
 		{
 			try
 			{
@@ -45,17 +45,17 @@ namespace DotNet7_MoonTechnoLab.Controllers
 				FileInfo existingFile = new FileInfo(filePath);
 
 				await StoredPayRegData(existingFile);
-				return "";
+				return Ok("Data stored successfully");
 			}
 			catch (Exception ex)
 			{
-				return (ex.Message);
+				return BadRequest(ex.Message);
 			}
 
 
 		}
 		[HttpPost("OTReg")]
-		public async Task<string> PostOTRREg(IFormFile excelFile)
+		public async Task<IActionResult> PostOTRREg(IFormFile excelFile)
 		{
 			try
 			{
@@ -76,18 +76,18 @@ namespace DotNet7_MoonTechnoLab.Controllers
 
 				FileInfo existingFile = new FileInfo(filePath);
 				await StoredOTRegData(existingFile);
-				return "";
+				return Ok("Data stored successfully");
 			}
 			catch (Exception ex)
 			{
-				return (ex.Message);
+				return BadRequest(ex.Message);
 			}
 
 
 		}
 
 		[HttpPost("TimeAttendance")]
-		public async Task<string> PostTimeAttendance(IFormFile excelFile)
+		public async Task<IActionResult> PostTimeAttendance(IFormFile excelFile)
 		{
 			try
 			{
@@ -156,18 +156,18 @@ namespace DotNet7_MoonTechnoLab.Controllers
 					
 				}
 
-				return "";
+				return Ok("Data stored successfully");
 			}
 			catch (Exception ex)
 			{
-				return (ex.Message);
+				return BadRequest(ex.Message);
 			}
 
 
 		}
 
 		[HttpGet("Payroll")]
-		public async Task<string> GetDataPayroll(string Payroll)
+		public async Task<IActionResult> GetDataPayroll(string Payroll)
 		{
 			try
 			{
@@ -208,18 +208,18 @@ namespace DotNet7_MoonTechnoLab.Controllers
 					ws.Cells.LoadFromDataTable(tableOTG, true, OfficeOpenXml.Table.TableStyles.Light8);
 					excelPack.Save();
 				}
-				return "";
+				return Ok("Data stored successfully");
 			}
 			catch (Exception ex)
 			{
-				return (ex.Message);
+				return BadRequest(ex.Message);
 			}
 
 
 		}
 
 		[HttpGet("OvertimeCalculation")]
-		public async Task<string> OvertimeCalculation(string Payroll)
+		public async Task<IActionResult> OvertimeCalculation(string Payroll)
 		{
 			try
 			{
@@ -243,44 +243,52 @@ namespace DotNet7_MoonTechnoLab.Controllers
 				var filterDataRegPayData = regPayData.Where(x => x.PAYROLL == Payroll);
 
 				List<OverTimeCal> overTimeCals = new List<OverTimeCal>();
-				foreach(var item in filterDataRegPayData)
+
+				//get attendance data from the excel sheet
+				var attendanceData = await GetAttendaceData(existingFile);
+				foreach (var item in filterDataRegPayData)
 				{
-					//decimal salary = (Convert.ToDecimal(item.MONTHLYSALARYRATE));
-					//var calOvertime = ((((salary) * 12) / 261)/8);
-					OverTimeCal Cal = new OverTimeCal{
-					ATTDEDUCTION =  item.ATTDEDUCTION,
-					EMPLOYEEID = item.EMPLOYEEID,
-					FIRSTNAME =  item.FIRSTNAME,
-					LASTNAME = item.LASTNAME,
-					OVERTIME = item.OVERTIME,
-					Id = item.Id
-				};
-					overTimeCals.Add(Cal);
+					//get data from empid and overtime days
+					var attend = attendanceData.Where(x => x.EMPID == item.EMPLOYEEID && x.LWOPDAYS != null).FirstOrDefault();
+					if (attend != null)
+					{
+						//Create a method to produce the  Columns
+						decimal salary = (Convert.ToDecimal(item.MONTHLYSALARYRATE));
+						int days = Convert.ToInt32(attend.LWOPDAYS);
+						var calOvertime = ((((salary) * 12) / 261) / 8) * days;
+						OverTimeCal Cal = new OverTimeCal
+						{
+							ATTDEDUCTION = item.ATTDEDUCTION,
+							EMPLOYEEID = item.EMPLOYEEID,
+							FIRSTNAME = item.FIRSTNAME,
+							LASTNAME = item.LASTNAME,
+							OVERTIME = calOvertime,
+							Id = item.Id
+						};
+						overTimeCals.Add(Cal);
+					}
+					
 				}
 				
-				//var filterOtgPayData = otgPayData.Where(x => x.PAYROLL == Payroll);
-
-				// let's convert our object data to Datatable for a simplified logic.
-				// Datatable is the easiest way to deal with complex datatypes for easy reading and formatting. 
-				DataTable table = (DataTable)JsonConvert.DeserializeObject(JsonConvert.SerializeObject(overTimeCals), (typeof(DataTable)));
-				using (var excelPack = new ExcelPackage(filePath))
+				if(overTimeCals.Any())
 				{
-					var ws = excelPack.Workbook.Worksheets.Add("PAYREGEXTRA");
-					ws.Cells.LoadFromDataTable(table, true, OfficeOpenXml.Table.TableStyles.Light8);
-					excelPack.Save();
+					// let's convert our object data to Datatable for a simplified logic.
+					// Datatable is the easiest way to deal with complex datatypes for easy reading and formatting. 
+					DataTable table = (DataTable)JsonConvert.DeserializeObject(JsonConvert.SerializeObject(overTimeCals), (typeof(DataTable)));
+					using (var excelPack = new ExcelPackage(filePath))
+					{
+						var ws = excelPack.Workbook.Worksheets.Add("PAYREGEXTRA");
+						ws.Cells.LoadFromDataTable(table, true, OfficeOpenXml.Table.TableStyles.Light8);
+						excelPack.Save();
+					}
 				}
-				//DataTable tableOTG = (DataTable)JsonConvert.DeserializeObject(JsonConvert.SerializeObject(filterOtgPayData), (typeof(DataTable)));
-				//using (var excelPack = new ExcelPackage(filePath))
-				//{
-				//	var ws = excelPack.Workbook.Worksheets.Add("OtgEXTRA");
-				//	ws.Cells.LoadFromDataTable(tableOTG, true, OfficeOpenXml.Table.TableStyles.Light8);
-				//	excelPack.Save();
-				//}
-				return "";
+
+
+				return Ok("Data stored successfully");
 			}
 			catch (Exception ex)
 			{
-				return (ex.Message);
+				return BadRequest(ex.Message);
 			}
 
 
@@ -524,6 +532,60 @@ namespace DotNet7_MoonTechnoLab.Controllers
 
 
 				}
+				return generatedType;
+			}
+
+
+		}
+		[NonAction]
+
+		public async Task<List<TimeAttendance>> GetAttendaceData(FileInfo existingFile)
+		{
+			ExcelPackage.LicenseContext = LicenseContext.NonCommercial;
+
+			bool hasHeader = true;
+			using (var excelPack = new ExcelPackage(existingFile))
+			{
+
+
+				//Lets Deal with first worksheet.(You may iterate here if dealing with multiple sheets)
+				var ws = excelPack.Workbook.Worksheets[_configuration.GetValue<string>("ExcelFiles:TimeAttendance")];
+
+				//Get all details as DataTable -because Datatable make life easy :)
+				DataTable excelasTable = new DataTable();
+				foreach (var firstRowCell in ws.Cells[1, 1, 1, ws.Dimension.End.Column])
+				{
+					//Get colummn details
+					if (!string.IsNullOrEmpty(firstRowCell.Text))
+					{
+						string firstColumn = string.Format("Column {0}", firstRowCell.Start.Column);
+						excelasTable.Columns.Add(hasHeader ? firstRowCell.Text : firstColumn);
+					}
+				}
+				var startRow = hasHeader ? 2 : 1;
+				//Get row details
+				for (int rowNum = startRow; rowNum <= ws.Dimension.End.Row; rowNum++)
+				{
+					var wsRow = ws.Cells[rowNum, 1, rowNum, excelasTable.Columns.Count];
+					DataRow row = excelasTable.Rows.Add();
+					foreach (var cell in wsRow)
+					{
+						row[cell.Start.Column - 1] = cell.Text;
+					}
+				}
+				var data = excelasTable.Rows.OfType<DataRow>()
+		   .Select(row => excelasTable.Columns.OfType<DataColumn>()
+			   .ToDictionary(col => col.ColumnName, c => row[c]));
+
+				var generatedTypeObject = JsonConvert.SerializeObject(data,
+							Newtonsoft.Json.Formatting.None,
+							new JsonSerializerSettings
+							{
+								NullValueHandling = NullValueHandling.Ignore
+							});
+				var generatedType = JsonConvert.DeserializeObject<List<TimeAttendance>>(generatedTypeObject);
+
+
 				return generatedType;
 			}
 

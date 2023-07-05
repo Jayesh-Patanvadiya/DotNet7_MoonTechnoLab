@@ -9,7 +9,7 @@ namespace DotNet7_MoonTechnoLab.Model
 
 		[JsonProperty("OVERTIME")]
 		[JsonPropertyName("OVERTIME")]
-		public string OVERTIME { get; set; }
+		public decimal OVERTIME { get; set; }
 
 	
 
